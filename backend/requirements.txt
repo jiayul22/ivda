@@ -1,1 +1,13 @@
 werkzeug==2.1.2
+flask==2.1.1
+flask-restx==0.5.1
+flask_cors
+flask_pymongo
+fastapi
+numpy
+pandas
+transformers
+torch
+joblib
+sklearn==1.0.2
+tensorflow
