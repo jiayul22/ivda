@@ -141,7 +141,25 @@ class Companies(Resource):
         return company.to_json()
 
 
+class PredictPrice(Resource):
+    def get(self, args=None):
+        '''
+        parse parameters and return prediction
 
+        Parameters:
+          request: request from the frontend
+
+        Returns:
+            price prediction+features weight (should be json format)
+        '''
+        
+        args = request.args.to_dict()
+        print(args)  # {'City': 'xxx', 'Region': 'xxx', 'Room_Type': 'xxx', 'Available_Night': 'xxx'}
+
+        # TODO 
+        message = {"status": "Success"} # just for testing. You should construct your own response message
+        
+        return json.dumps(message)
 
 
 api.add_resource(CompaniesList, '/companies')
