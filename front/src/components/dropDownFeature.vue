@@ -38,9 +38,9 @@ export default {
       'Available_Night':'',
     },
     selectCategory: [
-      {name: 'City', value: ['Paris','Zurich','A','B']},
+      {name: 'City', value: ['Berlin', 'Cophenhagen', 'Oslo', 'Paris', 'Rome', 'San-francisco', 'Stockholm', 'Zurich']},
       {name: 'Region' , value: ['R1','R2','R3']},
-      {name: 'Room_Type', value: ['A', 'B', 'C']},
+      {name: 'Room_Type', value: ['Entire home/apt', 'Hotel room', 'Private room', 'Shared room']},
       {name: 'Available_Night',value:[]},
     ]
   }),
