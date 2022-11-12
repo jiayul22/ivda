@@ -41,7 +41,8 @@ export default {
       {name: 'City', value: ['Berlin', 'Cophenhagen', 'Oslo', 'Paris', 'Rome', 'San-francisco', 'Stockholm', 'Zurich']},
       {name: 'Region' , value: ['R1','R2','R3']},
       {name: 'Room_Type', value: ['Entire home/apt', 'Hotel room', 'Private room', 'Shared room']},
-      {name: 'Available_Night',value:[]},
+      {name: 'Minimum nights',value:[]},
+      {name: 'Available_365',value:[]},
     ]
   }),
 
