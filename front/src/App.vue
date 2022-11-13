@@ -74,7 +74,7 @@
           </v-col>
 
           <v-col cols="12" md="5" class="mt-0 pa-1">
-            <boxPlot/>
+            <histogram/>
           </v-col>
 
         </v-row>
@@ -94,7 +94,7 @@
 
           <v-col cols="2" md="2"  class="pa-1">
             <prediction/>
-          </v-col>          
+          </v-col>
 
           <v-col cols="12" md="5"  class="pa-1">
             <barPlot/>
@@ -110,7 +110,7 @@
 
 <script>
   import mapPlot from './components/mapPlot';
-  import boxPlot from './components/boxPlot';
+  import histogram from './components/histogram';
   import prediction from './components/prediction';
   import dropDownFeature from './components/dropDownFeature';
   import barPlot from './components/barPlot';
@@ -118,12 +118,12 @@
   export default {
     components: {
       mapPlot,
-      boxPlot,
+      histogram,
       prediction,
       dropDownFeature,
       barPlot
     },
-    data: () => ({ 
+    data: () => ({
       drawer: null,
       items: [
           { title: 'Dashboard', icon: 'format-list-chekcs', to:'/'},

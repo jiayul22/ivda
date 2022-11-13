@@ -1,6 +1,6 @@
 <template>
   <v-card height="420">
-  
+
     <v-list-item
       v-for="(item, i) in selectCategory"
       :key="i"
@@ -17,7 +17,7 @@
 
     <v-btn
       elevation="2"
-       @click="sendSelectionToBackend"
+      @click="sendSelectionToBackend"
     >
       Submit
     </v-btn>
@@ -32,7 +32,7 @@ export default {
 
   data: () => ({
     inputFeature:{
-      'City':'', 
+      'City':'',
       'Region':'',
       'Room_Type':'',
       'Available_Night':'',
@@ -69,8 +69,8 @@ export default {
         this.inputFeature[name] = value;
       }
   },
-  
-  
+
+
 }
 </script>
 
