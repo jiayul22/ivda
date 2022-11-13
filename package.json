@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "vue-histogram-slider": "^0.3.8"
+  }
+}
