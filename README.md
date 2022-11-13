@@ -8,7 +8,7 @@
 Other files and methods are not relevant to the current project. But it might provide a guide to current work.
 
 # Instructions:
-## To run the frontend:
+## Prepare for the running:
 
 ### Project setup
 ```
@@ -29,7 +29,7 @@ npm i vue-histogram-slider
 ```
 cd front
 ```
-# to start the frontend server:
+## to start the frontend server:
 ```
 npm run serve
 ```
