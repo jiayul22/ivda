@@ -5,7 +5,7 @@ from flask_pymongo import PyMongo
 from pymongo.collection import Collection
 
 # for the models
-import os
+import os, re
 import numpy as np
 import pandas as pd
 from transformers import AutoTokenizer, AutoModel
