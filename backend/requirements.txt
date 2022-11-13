@@ -9,5 +9,5 @@ pandas
 transformers
 torch
 joblib
-sklearn==1.0.2
-tensorflow
+
+# ! pip install -U sentence-transformers

@@ -11,9 +11,6 @@ import pandas as pd
 from transformers import AutoTokenizer, AutoModel
 import torch
 from joblib import dump, load
-from sklearn.preprocessing import OneHotEncoder
-import tensorflow as tf
-from tensorflow import keras
 import pickle
 import logging
 
@@ -36,12 +33,14 @@ api = Api(app)
 app.logger.info("==> BACKEND: imports done!")
 
 # --------------------------------------------------------------------------------------------------------
+# --------------------------------------- SETUP EVERYTHING -----------------------------------------------
+# --------------------------------------------------------------------------------------------------------
 
 # Get Docker global variables - OR MAYBE NO DOCKER NOW
-STORAGE_DIR = os.path.join(os.getcwd(), "backend_storage/")
+backend_storage = os.path.join(os.getcwd(), "backend_storage/")
 
 # Now all the setup for the ML model
-with open(os.path.join(STORAGE_DIR, 'curr2eur.json'),'r') as json_file:
+with open(os.path.join(backend_storage, 'curr2eur.json'),'r') as json_file:
    curr_to_eur = json.load(json_file)
 
 #Mean Pooling - Take attention mask into account for correct averaging
@@ -57,14 +56,23 @@ tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/paraphrase-mult
 name_model = AutoModel.from_pretrained("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 # one hot neighborhood
-one_hot_neighborhood = load(os.path.join(STORAGE_DIR, 'one_hot_neighborhood.joblib'))
+one_hot_neighborhood = load(os.path.join(backend_storage, 'one_hot_neighborhood.joblib'))
 
-# load the nlp model
-nlp_model = keras.models.load_model(os.path.join(STORAGE_DIR, "nlp_model.h5"))
+# load the nlp model - without tf this time
+hidden1_weights = np.load(os.path.join(backend_storage, 'hidden1_weights.npy'))
+hidden1_biases = np.load(os.path.join(backend_storage, 'hidden1_biases.npy'))
+out_weights = np.load(os.path.join(backend_storage, 'out_weights.npy'))
+out_biases = np.load(os.path.join(backend_storage, 'out_biases.npy'))
+
+def nlp_model_predict(x):
+  hidden_1 = np.dot(x, hidden1_weights) + hidden1_biases
+  # relu
+  hidden_1[hidden_1<0] =0
+  return np.dot(hidden_1, out_weights) + out_biases
 
 # other one hot encoders
-one_hot_city = load(os.path.join(STORAGE_DIR, "one_hot_city.joblib"))
-one_hot_room_type = load(os.path.join(STORAGE_DIR, "one_hot_room_type.joblib"))
+one_hot_city = load(os.path.join(backend_storage, "one_hot_city.joblib"))
+one_hot_room_type = load(os.path.join(backend_storage, "one_hot_room_type.joblib"))
 
 cities = list(one_hot_city.get_feature_names_out())
 cities = [re.sub("\s", "_", city) for city in cities]
@@ -73,27 +81,91 @@ room_types = list(one_hot_room_type.get_feature_names_out())
 room_types = [re.sub("\s", "_", room_type) for room_type in room_types]
 
 # price encoding for neighborhoods
-with open(os.path.join(STORAGE_DIR, 'neighbourhood_prices_dict.json','r')) as json_file:
+with open(os.path.join(backend_storage, 'neighbourhood_prices_dict.json'),'r') as json_file:
    neighbourhood_prices_dict = json.load(json_file)
 
-price_model = pickle.load(open(os.path.join(STORAGE_DIR, 'linear_model.pickle'), 'rb'))
+price_model_coef = np.load(os.path.join(backend_storage, 'price_model_coef.npy'))
+price_model_intercept = np.load(os.path.join(backend_storage, 'price_model_intercept.npy'))
 
-feature_order = ['neighbourhood_names_embedded', 'neighbourhood', 'minimum_nights', 'reviews_per_month',
+def price_model_predict(input):
+  # inputs is df or np array.
+  x = np.array(input)
+  return np.dot(x, price_model_coef) + price_model_intercept
+  # returns scalar value for single input and array of values for multiple rows in input
+
+feature_order = ['neighbourhood_names_embedded', 'neighbourhood', 'minimum_nights',
       'room_type_Entire_home/apt', 'room_type_Hotel_room', 'room_type_Private_room', 'room_type_Shared_room',
       'city_berlin', 'city_copenhagen', 'city_oslo', 'city_paris', 'city_rome', 'city_san-francisco', 'city_stockholm', 'city_zurich']
 
 numeric_cols = ['minimum_nights']
 
-# --------------------------------------------------------------------------------------------------------
 app.logger.info("==> BACKEND: setup done! Ready for inference!")
+
+# --------------------------------------------------------------------------------------------------------
+# --------------------------------------- INFERENCE -----------------------------------------------------
+# --------------------------------------------------------------------------------------------------------
+def inference(raw_data):
+  res = dict()
+
+  if type(raw_data['name']) != str:
+    raw_data['name'] = ' '
+  for key in numeric_cols:
+    if np.isnan(raw_data[key]):
+      raw_data[key] = 0.0
+
+  # get name embeddings
+  encoded_input = tokenizer([raw_data["name"]], padding=True, truncation=True, max_length=128, return_tensors='pt')
+  #Compute token embeddings
+  with torch.no_grad():
+      model_output = name_model(**encoded_input)
+  #Perform pooling. In this case, mean pooling
+  name_embedding = mean_pooling(model_output, encoded_input['attention_mask'])
+
+  # one hot encode neighborhood
+  neighborhood_encoded = one_hot_neighborhood.transform([[raw_data["neighbourhood"]]])
+
+  name_neighborhood = np.concatenate([name_embedding, neighborhood_encoded.toarray()], axis=1)
+  res["neighbourhood_names_embedded"] = float(nlp_model_predict(name_neighborhood))
+
+  # one hot encode others
+  encoded = np.array(one_hot_city.transform([[raw_data["city"]]]).todense())[0]
+  for i in range(len(cities)):
+    res['city_' + cities[i][3:]] = encoded[i]
+
+  encoded = np.array(one_hot_room_type.transform([[raw_data["room_type"]]]).todense())[0]
+  for i in range(len(room_types)):
+    res['room_type_' + room_types[i][3:]] = encoded[i]
+
+  res['neighbourhood'] = neighbourhood_prices_dict[raw_data["neighbourhood"]]
+
+  # numerical cols directly copy
+  for col in numeric_cols:
+    res[col] = raw_data[col]
+
+  input = pd.DataFrame([res])[feature_order]
+
+  pred = price_model_predict(input)
+
+  feature_contr = dict(zip(feature_order, input.to_numpy()[0] * price_model_coef))
+  feature_weights = dict(zip(feature_order, price_model_coef))
+  return pred, feature_contr, feature_weights
+
+
+# --------------------------------------------------------------------------------------------------------
+# --------------------------------------- APIs ----------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------
 
 class PredictPrice(Resource):
     # TODO return algorithm result(price prediction)
     def get(self, args=None):
-        print("## PredictPrice ##")
+        app.logger.info("==> BACKEND: Predict pice method")
         args = request.args.to_dict()
         app.logger.info("==> BACKEND: args: ", args)
-        return json.dumps({"status": "Success"})
+        pred, feature_contr, feature_weights = inference(args)
+        return json.dumps({"status": "Success",
+        "pred" : pred,
+        "feature_contr" : feature_contr,
+        "feature_weights" : feature_weights})
 
 class CompaniesList(Resource):
     def get(self, args=None):
