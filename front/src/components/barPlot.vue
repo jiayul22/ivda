@@ -22,7 +22,7 @@ export default {
     LinePlotData: {x: [], y: []},
     responseData:{ 'profit': [{'year': 2021, 'value': 33364}, {'year': 2020, 'value': 21331}, {'year': 2019, 'value': 11588}, {'year': 2018, 'value': 10073}, {'year': 2017, 'value': 3033}]}
   }),
-  
+
   mounted() {
     this.fetchData()
   },
@@ -54,7 +54,7 @@ export default {
       Plotly.newPlot('myLinePlot', data, layout, config);
     }
   }
-  
+
 }
 </script>
 

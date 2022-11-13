@@ -21,7 +21,7 @@ export default {
   data: () => ({
     LinePlotData: {x: [], y: []}
   }),
-  
+
 }
 </script>
 
