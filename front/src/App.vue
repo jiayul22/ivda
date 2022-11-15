@@ -87,18 +87,7 @@
           align="center"
           justify="center"
         >
-
-          <v-col cols="12" md="3"  class="pa-1">
-            <dropDownFeature/>
-          </v-col>
-
-          <v-col cols="2" md="2"  class="pa-1">
-            <prediction/>
-          </v-col>
-
-          <v-col cols="12" md="5"  class="pa-1">
-            <barPlot/>
-          </v-col>
+            <PredictionFeatureSelection/>
 
         </v-row>
       </v-container>
@@ -111,17 +100,13 @@
 <script>
   import mapPlot from './components/mapPlot';
   import histogram from './components/histogram';
-  import prediction from './components/prediction';
-  import dropDownFeature from './components/dropDownFeature';
-  import barPlot from './components/barPlot';
+  import PredictionFeatureSelection from './components/PredictionFeatureSelection';
 
   export default {
     components: {
       mapPlot,
       histogram,
-      prediction,
-      dropDownFeature,
-      barPlot
+      PredictionFeatureSelection,
     },
     data: () => ({
       drawer: null,

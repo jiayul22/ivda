@@ -1,27 +1,38 @@
 <template>
-  <v-card height="420">
 
+  <main>
     <v-row align="center" justify="center" class="mt-0 mb-0">
       <h3>Price Prediction</h3>
     </v-row>
 
     <v-row align="center" justify="center" class="mt-0 mb-0">
-      <h1> xxx </h1>
+      <h1 class="green--text"> {{ $props.price }}</h1>
     </v-row>
+  </main>
 
-  </v-card>
+
 </template>
 
 <script>
 export default {
 
-  name: "LinePlot",
-  props: ["selectedCompany", "selectedAlgorithm"],
+  name: "PredictionPrice",
+  props: ["price"],
 
   data: () => ({
     LinePlotData: {x: [], y: []}
   }),
 
+  mounted() {
+    this.print()
+  },
+
+  methods: {
+    print() {
+        console.log("!!price predict: " , this.$props.price);
+    }
+  }
+  
 }
 </script>
 
