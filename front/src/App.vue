@@ -87,7 +87,7 @@
           align="center"
           justify="center"
         >
-            <PredictionFeatureSelection/>
+            <Prediction/>
 
         </v-row>
       </v-container>
@@ -100,13 +100,13 @@
 <script>
   import mapPlot from './components/mapPlot';
   import histogram from './components/histogram';
-  import PredictionFeatureSelection from './components/PredictionFeatureSelection';
+  import Prediction from './components/Prediction';
 
   export default {
     components: {
       mapPlot,
       histogram,
-      PredictionFeatureSelection,
+      Prediction,
     },
     data: () => ({
       drawer: null,
