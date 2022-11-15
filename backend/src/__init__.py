@@ -214,24 +214,31 @@ class Companies(Resource):
 
 
 class PredictPrice(Resource):
+    # TODO return algorithm result(price prediction)
     def get(self, args=None):
         '''
         parse parameters and return prediction
-
         Parameters:
           request: request from the frontend
-
         Returns:
             price prediction+features weight (should be json format)
         '''
-        
+
         args = request.args.to_dict()
         print(args)  # {'City': 'xxx', 'Region': 'xxx', 'Room_Type': 'xxx', 'Available_Night': 'xxx'}
 
-        # TODO 
-        message = {"status": "Success"} # just for testing. You should construct your own response message
-        
-        return json.dumps(message)
+        # TODO
+        message = {
+            "price": 230,
+            "weights": [
+                {"feature": "city", "weight": 0.6},
+                {"feature": "neighbourhood", "weight":0.5 },
+                {"feature": "room_type", "weight":0.4},
+                {"feature": "minimum_nights", "weight":0.4},
+                {"feature": "name", "weight":0.4}]
+        }
+        print(type(message))
+        return message
 
 
 api.add_resource(CompaniesList, '/companies')
