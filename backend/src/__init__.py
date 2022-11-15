@@ -221,7 +221,7 @@ class PredictPrice(Resource):
         Parameters:
           request: request from the frontend
         Returns:
-            price prediction+features weight (should be json format)
+            price prediction+features weight (should be dictionary format)
         '''
 
         args = request.args.to_dict()
