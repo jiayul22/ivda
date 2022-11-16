@@ -10,12 +10,11 @@
         :width="500"
         :bar-height="300"
         :data="data"
-        :prettify="prettify"
         :drag-interval="true"
         :force-edges="true"
         :colors="['#4facfe', '#00f2fe']"
-        :min="new Date(2004, 11, 24).valueOf()"
-        :max="new Date(2017, 11, 24).valueOf()"
+        :min=0
+        :max=1200
         />
         </div>
     </div>
@@ -31,14 +30,7 @@ export default {
 
   data() {
     return {
-      data: data.map(d => new Date(d)),
-      prettify: function(ts) {
-        return new Date(ts).toLocaleDateString("en", {
-          year: "numeric",
-          month: "short",
-          day: "numeric"
-        });
-      }
+      data: data
     };
   }
 };
@@ -53,6 +45,6 @@ export default {
   color: #2c3e50;
   padding-top: 50px;
   margin: 0 auto;
-  width: 800px;
+  width: 500px;
 }
 </style>
