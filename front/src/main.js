@@ -5,9 +5,10 @@ import vuetify from './plugins/vuetify'
 import HistogramSlider from "vue-histogram-slider";
 import "vue-histogram-slider/dist/histogram-slider.css";
 
-import "leaflet/dist/leaflet.css"
+
 import L from 'leaflet';
 delete L.Icon.Default.prototype._getIconUrl;
+import "leaflet/dist/leaflet.css"
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
