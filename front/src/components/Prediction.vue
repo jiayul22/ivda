@@ -41,6 +41,8 @@
         <v-card height="500">
           <PredictionPrice 
             :price="price"
+            :neighborhood_avg="neighborhood_avg"
+            :name_score="name_score"
           />
         </v-card>
       </v-col>
@@ -71,7 +73,9 @@ export default {
     barPlotId: 0,
 
     price:'',
+    neighborhood_avg:'',
     weights:'',
+    name_score:'',
     
     inputFeature:{
       'city':'', 
@@ -110,11 +114,12 @@ export default {
         const response = await fetch(reqUrl)
         const responseData = await response.json();
 
-        console.log("price " + responseData.price)
-        console.log("weight " + responseData.weights)
+        console.log("!!! " + responseData.neighborhood_avg)
 
         this.price = responseData.price 
+        this.neighborhood_avg = responseData.neighborhood_avg
         this.weights = responseData.weights
+        this.name_score = responseData.name_score
 
       },
 
