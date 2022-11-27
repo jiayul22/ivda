@@ -14,7 +14,9 @@ from joblib import dump, load
 import pickle
 import logging
 
-from .model import Company # ?
+from .model import House
+from .model import Company
+
 import json
 
 # Configure Flask & Flask-PyMongo:
@@ -22,11 +24,15 @@ app = Flask(__name__)
 # allow access from everywhere
 cors = CORS()
 cors.init_app(app, resources={r"*": {"origins": "*"}})
+
+app.config["MONGO_URI"] = "mongodb://localhost:27017/Airbnb"
+pymongo = PyMongo(app)
+house: Collection = pymongo.db.house
+
 app.config["MONGO_URI"] = "mongodb://localhost:27017/companiesdatabase"
 pymongo = PyMongo(app)
-
-# Get a reference to the companies collection.
 companies: Collection = pymongo.db.companies
+
 
 api = Api(app)
 
@@ -80,6 +86,8 @@ cities = [re.sub("\s", "_", city) for city in cities]
 room_types = list(one_hot_room_type.get_feature_names_out())
 room_types = [re.sub("\s", "_", room_type) for room_type in room_types]
 
+city_neighborhoods = load(os.path.join(backend_storage, 'city_neighborhoods.joblib'))
+
 # price encoding for neighborhoods
 with open(os.path.join(backend_storage, 'neighbourhood_prices_dict.json'),'r') as json_file:
    neighbourhood_prices_dict = json.load(json_file)
@@ -105,142 +113,104 @@ app.logger.info("==> BACKEND: setup done! Ready for inference!")
 # --------------------------------------- INFERENCE -----------------------------------------------------
 # --------------------------------------------------------------------------------------------------------
 def inference(raw_data):
-  res = dict()
+    res = dict()
 
-  if type(raw_data['name']) != str:
-    raw_data['name'] = ' '
-  for key in numeric_cols:
-    if np.isnan(raw_data[key]):
-      raw_data[key] = 0.0
+    if raw_data['name'] == '':
+        raw_data['name'] = ' '
+    if raw_data['city'] not in cities:
+        raw_data['city'] = 'berlin'
+    if raw_data["neighbourhood"] not in city_neighborhoods:
+        raw_data["neighbourhood"] = city_neighborhoods[raw_data['city']][0]
+    for key in numeric_cols:
+        if raw_data[key] == '':
+            raw_data[key] = 0.0
+        raw_data[key] = float(raw_data[key])
 
-  # get name embeddings
-  encoded_input = tokenizer([raw_data["name"]], padding=True, truncation=True, max_length=128, return_tensors='pt')
-  #Compute token embeddings
-  with torch.no_grad():
-      model_output = name_model(**encoded_input)
-  #Perform pooling. In this case, mean pooling
-  name_embedding = mean_pooling(model_output, encoded_input['attention_mask'])
+    # get name embeddings
+    encoded_input = tokenizer([raw_data["name"]], padding=True, truncation=True, max_length=128, return_tensors='pt')
+    # Compute token embeddings
+    with torch.no_grad():
+        model_output = name_model(**encoded_input)
+    # Perform pooling. In this case, mean pooling
+    name_embedding = mean_pooling(model_output, encoded_input['attention_mask'])
 
-  # one hot encode neighborhood
-  neighborhood_encoded = one_hot_neighborhood.transform([[raw_data["neighbourhood"]]])
+    # one hot encode neighborhood
+    neighborhood_encoded = one_hot_neighborhood.transform([[raw_data["neighbourhood"]]])
 
-  name_neighborhood = np.concatenate([name_embedding, neighborhood_encoded.toarray()], axis=1)
-  res["neighbourhood_names_embedded"] = float(nlp_model_predict(name_neighborhood))
+    name_neighborhood = np.concatenate([name_embedding, neighborhood_encoded.toarray()], axis=1)
+    res["neighbourhood_names_embedded"] = float(nlp_model_predict(name_neighborhood))
 
-  # one hot encode others
-  encoded = np.array(one_hot_city.transform([[raw_data["city"]]]).todense())[0]
-  for i in range(len(cities)):
-    res['city_' + cities[i][3:]] = encoded[i]
+    # one hot encode others
+    encoded = np.array(one_hot_city.transform([[raw_data["city"]]]).todense())[0]
+    for i in range(len(cities)):
+        res['city_' + cities[i][3:]] = encoded[i]
 
-  encoded = np.array(one_hot_room_type.transform([[raw_data["room_type"]]]).todense())[0]
-  for i in range(len(room_types)):
-    res['room_type_' + room_types[i][3:]] = encoded[i]
+    encoded = np.array(one_hot_room_type.transform([[raw_data["room_type"]]]).todense())[0]
+    for i in range(len(room_types)):
+        res['room_type_' + room_types[i][3:]] = encoded[i]
 
-  res['neighbourhood'] = neighbourhood_prices_dict[raw_data["neighbourhood"]]
+    res['neighbourhood'] = neighbourhood_prices_dict[raw_data["neighbourhood"]]
 
-  # numerical cols directly copy
-  for col in numeric_cols:
-    res[col] = raw_data[col]
+    # numerical cols directly copy
+    for col in numeric_cols:
+        res[col] = raw_data[col]
 
-  input = pd.DataFrame([res])[feature_order]
+    input = pd.DataFrame([res])[feature_order]
 
-  pred = price_model_predict(input)
+    pred = price_model_predict(input)
 
-  feature_contr = dict(zip(feature_order, input.to_numpy()[0] * price_model_coef))
-  feature_weights = dict(zip(feature_order, price_model_coef))
-  return pred, feature_contr, feature_weights
+    feature_contr = dict(zip(feature_order, input.to_numpy()[0] * price_model_coef))
+    return pred[0], feature_contr, res['neighbourhood'], res['neighbourhood_names_embedded']
 
 
 # --------------------------------------------------------------------------------------------------------
 # --------------------------------------- APIs ----------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------
 
+
 class PredictPrice(Resource):
-    # TODO return algorithm result(price prediction)
     def get(self, args=None):
         app.logger.info("==> BACKEND: Predict pice method")
         args = request.args.to_dict()
         app.logger.info("==> BACKEND: args: ", args)
-        pred, feature_contr, feature_weights = inference(args)
-        return json.dumps({"status": "Success",
-        "pred" : pred,
-        "feature_contr" : feature_contr,
-        "feature_weights" : feature_weights})
+        pred, feature_contr, avg, name_score = inference(args)
+        weights = []
 
-class CompaniesList(Resource):
-    def get(self, args=None):
-        args = request.args.to_dict()
-        print(args)
-        if args['category'] == 'All':
-            cursor = companies.find()
-        else:
-            cursor = companies.find(args)
-        # print([Company(**doc).to_json() for doc in cursor])
-        return [Company(**doc).to_json() for doc in cursor]
+        room_type = 0.0
+        city = 0.0
+        for key in feature_contr:
+            if key[0:4] == 'room' and feature_contr[key] > room_type:
+                room_type = feature_contr[key]
+            if key[0:4] == 'city' and feature_contr[key] > city:
+                city = feature_contr[key]
 
+        weights.append({'feature': 'Name', 'weight': feature_contr['neighbourhood_names_embedded']})
+        weights.append({'feature': 'Neighborhood', 'weight': feature_contr['neighbourhood']})
+        weights.append({'feature': 'Room Type', 'weight': room_type})
+        weights.append({'feature': 'City', 'weight': city})
+        weights.append({'feature': 'Minimum Nights', 'weight': feature_contr['minimum_nights']})
 
-class Companies(Resource):
-    def get(self, id):
-        import pandas as pd
-        from statsmodels.tsa.ar_model import AutoReg
-        # search for the company by ID
-        cursor = companies.find_one_or_404({"id": id})
-        company = Company(**cursor)
-        # retrieve args
-        args = request.args.to_dict()
-        print(args)
-        # retrieve the profit
-        profit = company.profit
-        # add to df
-        profit_df = pd.DataFrame(profit).iloc[::-1]
+        # weights = dict(sorted(weights.items(), key=lambda x: x[1], reverse=True))
 
-        if args['algorithm'] == 'random':
-            # retrieve the profit value from 2021
-            prediction_value = int(profit_df["value"].iloc[-1])
-            # add the value to profit list at position 0
-            company.profit.insert(0, {'year': 2022, 'value': prediction_value})
-        elif args['algorithm'] == 'regression':
-            # create model
-            model_ag = AutoReg(endog=profit_df['value'], lags=1, trend='c', seasonal=False, exog=None, hold_back=None,
-                               period=None, missing='none')
-            # train the model
-            fit_ag = model_ag.fit()
-            # predict for 2022 based on the profit data
-            prediction_value = fit_ag.predict(start=len(profit_df), end=len(profit_df), dynamic=False).values[0]
-            # add the value to profit list at position 0
-            company.profit.insert(0, {'year': 2022, 'value': prediction_value})
-        print(company.to_json())
-        return company.to_json()
-
-
-class PredictPrice(Resource):
-    # TODO return algorithm result(price prediction)
-    def get(self, args=None):
-        '''
-        parse parameters and return prediction
-        Parameters:
-          request: request from the frontend
-        Returns:
-            price prediction+features weight (should be dictionary format)
-        '''
-
-        args = request.args.to_dict()
-        print(args)  # {'City': 'xxx', 'Region': 'xxx', 'Room_Type': 'xxx', 'Available_Night': 'xxx'}
-
-        # TODO
         message = {
-            "price": 230,
-            "weights": [
-                {"feature": "city", "weight": 0.6},
-                {"feature": "neighbourhood", "weight":0.5 },
-                {"feature": "room_type", "weight":0.4},
-                {"feature": "minimum_nights", "weight":0.4},
-                {"feature": "name", "weight":0.4}]
+            "price": f'{pred:.2f}',
+            "weights": weights,
+            "neighborhood_avg": f'{avg:.2f}',
+            "name_score": f'{name_score:.2f}'
         }
-        print(type(message))
+        print(message)
         return message
 
+def test_database():
+    '''
+    get data from mongo DB
+    '''
+    x = house.find_one()
+    print(x)
 
-api.add_resource(CompaniesList, '/companies')
-api.add_resource(Companies, '/companies/<int:id>')
+    # cursor = companies.find()
+    # print([Company(**doc).to_json() for doc in cursor])
+
+# test()
+
 api.add_resource(PredictPrice, '/PredictPrice')
