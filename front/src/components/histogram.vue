@@ -47,7 +47,7 @@ export default {
       'City':'',
     },
     selectCategory:[{
-      name: 'City', value: ['Berlin', 'Cophenhagen', 'Oslo', 'Paris', 'Rome', 'San-francisco', 'Stockholm', 'Zurich']
+      name: 'Feature', value: ['Price', 'Room Type', 'Minimum nights']
     }]
   }),
 
