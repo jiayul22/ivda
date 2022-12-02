@@ -114,10 +114,8 @@ export default {
         const response = await fetch(reqUrl)
         const responseData = await response.json();
 
-        console.log("!!! " + responseData.neighborhood_avg)
-
-        this.price = responseData.price 
-        this.neighborhood_avg = responseData.neighborhood_avg
+        this.price = parseFloat(responseData.price) 
+        this.neighborhood_avg = parseFloat(responseData.neighborhood_avg)
         this.weights = responseData.weights
         this.name_score = responseData.name_score
 
