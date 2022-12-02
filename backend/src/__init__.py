@@ -184,13 +184,17 @@ class PredictPrice(Resource):
             if key[0:4] == 'city' and feature_contr[key] > city:
                 city = feature_contr[key]
 
-        weights.append({'feature': 'Name', 'weight': feature_contr['neighbourhood_names_embedded']})
-        weights.append({'feature': 'Neighborhood', 'weight': feature_contr['neighbourhood']})
-        weights.append({'feature': 'Room Type', 'weight': room_type})
-        weights.append({'feature': 'City', 'weight': city})
-        weights.append({'feature': 'Minimum Nights', 'weight': feature_contr['minimum_nights']})
+        weight_dict = {
+            'Name':feature_contr['neighbourhood_names_embedded'],
+            'Neighborhood':feature_contr['neighbourhood'],
+            'Room Type':room_type,
+            'City':city,
+            'Minimum Nights':feature_contr['minimum_nights']
+        }
 
-        # weights = dict(sorted(weights.items(), key=lambda x: x[1], reverse=True))
+        weight_sort = dict(sorted(weight_dict.items(), key=lambda item: -item[1]))
+        for k, v in weight_sort.items():
+            weights.append({'feature':k, 'weight':v})
 
         message = {
             "price": f'{pred:.2f}',
