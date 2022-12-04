@@ -46,7 +46,8 @@ npm run lint
 
 ## To run the backend:
 ```
-# I don't suggest you do that rn.
+cd backend
+bash commands.sh
 ```
 
 ### Customize configuration
