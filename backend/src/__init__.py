@@ -98,14 +98,12 @@ price_model_intercept = np.load(os.path.join(backend_storage, 'price_model_inter
 def price_model_predict(input):
   # inputs is df or np array.
   x = np.array(input)
-  return np.dot(x, price_model_coef) + price_model_intercept
+  return np.exp(np.dot(x, price_model_coef) + price_model_intercept)
   # returns scalar value for single input and array of values for multiple rows in input
 
-feature_order = ['neighbourhood_names_embedded', 'neighbourhood', 'minimum_nights',
+feature_order = ['neighbourhood_names_embedded', 'neighbourhood',
       'room_type_Entire_home/apt', 'room_type_Hotel_room', 'room_type_Private_room', 'room_type_Shared_room',
       'city_berlin', 'city_copenhagen', 'city_oslo', 'city_paris', 'city_rome', 'city_san-francisco', 'city_stockholm', 'city_zurich']
-
-numeric_cols = ['minimum_nights']
 
 app.logger.info("==> BACKEND: setup done! Ready for inference!")
 
@@ -117,14 +115,10 @@ def inference(raw_data):
 
     if raw_data['name'] == '':
         raw_data['name'] = ' '
-    if raw_data['city'] not in cities:
+    if raw_data['city'] not in city_neighborhoods:
         raw_data['city'] = 'berlin'
-    if raw_data["neighbourhood"] not in city_neighborhoods:
+    if raw_data["neighbourhood"] not in neighbourhood_prices_dict:
         raw_data["neighbourhood"] = city_neighborhoods[raw_data['city']][0]
-    for key in numeric_cols:
-        if raw_data[key] == '':
-            raw_data[key] = 0.0
-        raw_data[key] = float(raw_data[key])
 
     # get name embeddings
     encoded_input = tokenizer([raw_data["name"]], padding=True, truncation=True, max_length=128, return_tensors='pt')
@@ -150,10 +144,6 @@ def inference(raw_data):
         res['room_type_' + room_types[i][3:]] = encoded[i]
 
     res['neighbourhood'] = neighbourhood_prices_dict[raw_data["neighbourhood"]]
-
-    # numerical cols directly copy
-    for col in numeric_cols:
-        res[col] = raw_data[col]
 
     input = pd.DataFrame([res])[feature_order]
 
@@ -184,13 +174,16 @@ class PredictPrice(Resource):
             if key[0:4] == 'city' and feature_contr[key] > city:
                 city = feature_contr[key]
 
-        weights.append({'feature': 'Name', 'weight': feature_contr['neighbourhood_names_embedded']})
-        weights.append({'feature': 'Neighborhood', 'weight': feature_contr['neighbourhood']})
-        weights.append({'feature': 'Room Type', 'weight': room_type})
-        weights.append({'feature': 'City', 'weight': city})
-        weights.append({'feature': 'Minimum Nights', 'weight': feature_contr['minimum_nights']})
+        weight_dict = {
+            'Name':np.exp(feature_contr['neighbourhood_names_embedded']),
+            'Neighborhood':np.exp(feature_contr['neighbourhood']),
+            'Room Type':np.exp(room_type),
+            'City':np.exp(city)
+        }
 
-        # weights = dict(sorted(weights.items(), key=lambda x: x[1], reverse=True))
+        weight_sort = dict(sorted(weight_dict.items(), key=lambda item: -item[1]))
+        for k, v in weight_sort.items():
+            weights.append({'feature':k, 'weight':v})
 
         message = {
             "price": f'{pred:.2f}',
