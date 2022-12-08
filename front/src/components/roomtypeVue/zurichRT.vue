@@ -9,7 +9,7 @@
 
   export default {
     data: () => ({
-        testData: {x: ['a', 'b', 'c', 'd'], y: [110, 200, 5, 1111]},
+        zurichRT: {x: ['a', 'b', 'c', 'd'], y: [110, 200, 5, 1111]},
     }),
 
     mounted() {
@@ -23,8 +23,8 @@
       },
     drawLinePlot() {
         var trace1 = {
-          x: this.testData.x,
-          y: this.testData.y,
+          x: this.zurichRT.x,
+          y: this.zurichRT.y,
           type: 'bar'
         };
         var data = [trace1];
