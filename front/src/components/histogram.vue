@@ -249,7 +249,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=35
           />
         </div>
       </div>
@@ -269,7 +269,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=35
           />
         </div>
       </div>
@@ -289,7 +289,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=35
           />
         </div>
       </div>
@@ -309,7 +309,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=35
           />
         </div>
       </div>
@@ -329,7 +329,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=365
           />
         </div>
       </div>
@@ -349,7 +349,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=35
           />
         </div>
       </div>
@@ -369,7 +369,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=400
           />
         </div>
       </div>
@@ -389,7 +389,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=35
           />
         </div>
       </div>
@@ -418,7 +418,7 @@ import stockholm_RT from "./roomtypeVue/stockholmRT.vue";
 
 import zurich_mn from "./mn/zurichMN.json";
 import berlin_mn from "./mn/berlinMN.json";
-import copenhagen_mn from "./mn/cophenagenMN.json";
+import copenhagen_mn from "./mn/copenhagenMN.json";
 import oslo_mn from "./mn/osloMN.json";
 import paris_mn from "./mn/parisMN.json";
 import rome_mn from "./mn/romeMN.json";
@@ -453,7 +453,7 @@ export default {
     copenhagen_mn: copenhagen_mn,
     oslo_mn: oslo_mn,
     paris_mn: paris_mn,
-    rome_mmn: rome_mn,
+    rome_mn: rome_mn,
     SF_mn: SF_mn,
     stockholm_mn: stockholm_mn,
 
