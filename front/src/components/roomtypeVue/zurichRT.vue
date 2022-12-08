@@ -9,7 +9,7 @@
 
   export default {
     data: () => ({
-        zurichRT: {x: ['a', 'b', 'c', 'd'], y: [110, 200, 5, 1111]},
+        RTdata: {x: ['Entire home/apt', 'Private room', 'Hotel room', 'Shared room'], y: [110, 200, 5, 1111]},
     }),
 
     mounted() {
@@ -17,26 +17,25 @@
     },
 
     methods: {
-    fetchData() {
-        // draw the lineplot after the data is transformed
-        this.drawLinePlot()
-      },
-    drawLinePlot() {
-        var trace1 = {
-          x: this.zurichRT.x,
-          y: this.zurichRT.y,
-          type: 'bar'
-        };
-        var data = [trace1];
-        var layout = {
-          // remove the layout of title
+      fetchData() {
+          // draw the lineplot after the data is transformed
+          this.drawLinePlot()
+        },
+      drawLinePlot() {
+          var trace1 = {
+            x: this.RTdata.x,
+            y: this.RTdata.y,
+            type: 'bar'
+          };
+          var data = [trace1];
+          var layout = {
+            // remove the layout of title
 
-        };
-        var config = {responsive: true, displayModeBar: false}
-        Plotly.newPlot('myLinePlot', data, layout, config);
+          };
+          var config = {responsive: true, displayModeBar: false}
+          Plotly.newPlot('myLinePlot', data, layout, config);
+      }
     }
-    }
-
   }
   </script>
 
