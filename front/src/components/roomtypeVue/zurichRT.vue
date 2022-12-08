@@ -1,6 +1,6 @@
 <template>
     <main>
-        <div id='myLinePlot' style="height:350px; width:650px; margin: auto;"></div>
+        <div id='zurich_RT' style="height:350px; width:90%; margin: auto; text-align: center;"></div>
     </main>
   </template>
 
@@ -9,7 +9,7 @@
 
   export default {
     data: () => ({
-        RTdata: {x: ['Entire home/apt', 'Private room', 'Hotel room', 'Shared room'], y: [110, 200, 5, 1111]},
+        zurich_RT_data: {x: ['Entire home/apt', 'Private room', 'Hotel room', 'Shared room'], y: [1532, 687, 9, 18]},
     }),
 
     mounted() {
@@ -23,8 +23,8 @@
         },
       drawLinePlot() {
           var trace1 = {
-            x: this.RTdata.x,
-            y: this.RTdata.y,
+            x: this.zurich_RT_data.x,
+            y: this.zurich_RT_data.y,
             type: 'bar'
           };
           var data = [trace1];
@@ -33,7 +33,7 @@
 
           };
           var config = {responsive: true, displayModeBar: false}
-          Plotly.newPlot('myLinePlot', data, layout, config);
+          Plotly.newPlot('zurich_RT', data, layout, config);
       }
     }
   }
