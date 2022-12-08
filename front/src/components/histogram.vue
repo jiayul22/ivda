@@ -51,7 +51,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=600
           />
         </div>
       </div>
@@ -71,7 +71,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=1000
           />
         </div>
       </div>
@@ -91,7 +91,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=1000
           />
         </div>
       </div>
@@ -111,7 +111,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=1000
           />
         </div>
       </div>
@@ -131,7 +131,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=1000
           />
         </div>
       </div>
@@ -171,7 +171,7 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+          :max=1000
           />
         </div>
       </div>
