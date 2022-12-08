@@ -400,7 +400,7 @@
 <script>
 import zurich_price from "./price/zurichP.json";
 import berlin_price from "./price/berlinP.json";
-import copenhagen_price from "./price/cophenhagenP.json";
+import copenhagen_price from "./price/copenhagenP.json";
 import oslo_price from "./price/osloP.json";
 import paris_price from "./price/parisP.json";
 import rome_price from "./price/romeP.json";
@@ -409,7 +409,7 @@ import stockholm_price from "./price/stockholmP.json";
 
 import zurich_RT from './roomtypeVue/zurichRT.vue';
 import berlin_RT from "./roomtypeVue/berlinRT.vue";
-import copenhagen_RT from "./roomtypeVue/cophenhagenRT.vue";
+import copenhagen_RT from "./roomtypeVue/copenhagenRT.vue";
 import oslo_RT from "./roomtypeVue/osloRT.vue";
 import paris_RT from "./roomtypeVue/parisRT.vue";
 import rome_RT from "./roomtypeVue/romeRT.vue";
@@ -418,7 +418,7 @@ import stockholm_RT from "./roomtypeVue/stockholmRT.vue";
 
 import zurich_mn from "./mn/zurichMN.json";
 import berlin_mn from "./mn/berlinMN.json";
-import copenhagen_mn from "./mn/cophenhagenMN.json";
+import copenhagen_mn from "./mn/cophenagenMN.json";
 import oslo_mn from "./mn/osloMN.json";
 import paris_mn from "./mn/parisMN.json";
 import rome_mn from "./mn/romeMN.json";
