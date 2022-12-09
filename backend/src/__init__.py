@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_restx import Resource, Api
 from flask_pymongo import PyMongo
 from pymongo.collection import Collection
+from .model import House
 
 # for the models
 import os, re
@@ -13,10 +14,6 @@ import torch
 from joblib import dump, load
 import pickle
 import logging
-
-from .model import House
-from .model import Company
-
 import json
 
 # Configure Flask & Flask-PyMongo:
@@ -29,25 +26,79 @@ app.config["MONGO_URI"] = "mongodb://localhost:27017/Airbnb"
 pymongo = PyMongo(app)
 house: Collection = pymongo.db.house
 
-app.config["MONGO_URI"] = "mongodb://localhost:27017/companiesdatabase"
-pymongo = PyMongo(app)
-companies: Collection = pymongo.db.companies
-
-
 api = Api(app)
-
 app.logger.info("==> BACKEND: imports done!")
+
+backend_storage = os.path.join(os.getcwd(), "backend_storage/")
+city_neighborhoods = load(os.path.join(backend_storage, 'city_neighborhoods.joblib'))
+
+
+class Get_Houses(Resource):
+    def get(self):
+      # args: {'city':['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']
+      # 'feature':['Price', 'room type', 'minimum nights']}
+      args = request.args.to_dict()
+      raw_data = args.copy()
+
+      def process_city_name(name):
+          return name.lower().replace(' ', '-')
+      raw_data['city'] = process_city_name(raw_data['city'])
+
+      feature = raw_data['feature'].lower().replace(' ', '_')
+      del raw_data['feature']
+
+      if raw_data['city'] not in city_neighborhoods:
+          raw_data['city'] = 'select'
+      if raw_data['city'] == 'select':
+          cursor = house.find()
+      else:
+          cursor = house.find(raw_data)
+      print(raw_data)
+      houses = [House(**doc) for doc in cursor]
+      print(houses[0])
+      if feature == 'price':
+          houses = [float(h.price) for h in houses]
+      elif feature == 'minimum_nights':
+          houses = [float(h.minimum_nights) for h in houses]
+      elif feature == 'room_type':
+          houses = [h.room_type for h in houses]
+          values, counts = np.unique(houses, return_counts=True)
+          return {'x': values.tolist(), 'y': counts.tolist(), 'type': 'bar'}
+      else:
+          print(feature)
+          houses = [h.to_json() for h in houses]
+      return {'out':houses, "max":np.max(houses).item()}
+
+class Get_Houses_Map(Resource):
+    def get(self):
+          # args: {'city':['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']
+          # 'feature':['Price', 'room type', 'minimum nights']}
+          args = request.args.to_dict()
+          raw_data = args.copy()
+          def process_city_name(name):
+              return name.lower().replace(' ', '-')
+          raw_data['city'] = process_city_name(raw_data['city'])
+
+          cursor = house.find(raw_data)
+          m = []
+          for doc in cursor:
+              h = House(**doc)
+              m.append({'price':h.price, 'lat':float(h.latitude), 'lng':float(h.longitude)})
+
+          message = {'out':m}
+          return message
+
 
 # --------------------------------------------------------------------------------------------------------
 # --------------------------------------- SETUP EVERYTHING -----------------------------------------------
 # --------------------------------------------------------------------------------------------------------
-
+"""
 # Get Docker global variables - OR MAYBE NO DOCKER NOW
 backend_storage = os.path.join(os.getcwd(), "backend_storage/")
 
 # Now all the setup for the ML model
 with open(os.path.join(backend_storage, 'curr2eur.json'),'r') as json_file:
-   curr_to_eur = json.load(json_file)
+    curr_to_eur = json.load(json_file)
 
 #Mean Pooling - Take attention mask into account for correct averaging
 def mean_pooling(model_output, attention_mask):
@@ -71,10 +122,10 @@ out_weights = np.load(os.path.join(backend_storage, 'out_weights.npy'))
 out_biases = np.load(os.path.join(backend_storage, 'out_biases.npy'))
 
 def nlp_model_predict(x):
-  hidden_1 = np.dot(x, hidden1_weights) + hidden1_biases
-  # relu
-  hidden_1[hidden_1<0] =0
-  return np.dot(hidden_1, out_weights) + out_biases
+    hidden_1 = np.dot(x, hidden1_weights) + hidden1_biases
+    # relu
+    hidden_1[hidden_1<0] =0
+    return np.dot(hidden_1, out_weights) + out_biases
 
 # other one hot encoders
 one_hot_city = load(os.path.join(backend_storage, "one_hot_city.joblib"))
@@ -87,23 +138,27 @@ room_types = list(one_hot_room_type.get_feature_names_out())
 room_types = [re.sub("\s", "_", room_type) for room_type in room_types]
 
 city_neighborhoods = load(os.path.join(backend_storage, 'city_neighborhoods.joblib'))
+city_names = list(city_neighborhoods.keys())
+
+def process_city_name(name):
+    return name.lower().replace(' ', '-')
 
 # price encoding for neighborhoods
 with open(os.path.join(backend_storage, 'neighbourhood_prices_dict.json'),'r') as json_file:
-   neighbourhood_prices_dict = json.load(json_file)
+neighbourhood_prices_dict = json.load(json_file)
 
 price_model_coef = np.load(os.path.join(backend_storage, 'price_model_coef.npy'))
 price_model_intercept = np.load(os.path.join(backend_storage, 'price_model_intercept.npy'))
 
 def price_model_predict(input):
-  # inputs is df or np array.
-  x = np.array(input)
-  return np.exp(np.dot(x, price_model_coef) + price_model_intercept)
-  # returns scalar value for single input and array of values for multiple rows in input
+    # inputs is df or np array.
+    x = np.array(input)
+    return np.exp(np.dot(x, price_model_coef) + price_model_intercept)
+    # returns scalar value for single input and array of values for multiple rows in input
 
 feature_order = ['neighbourhood_names_embedded', 'neighbourhood',
-      'room_type_Entire_home/apt', 'room_type_Hotel_room', 'room_type_Private_room', 'room_type_Shared_room',
-      'city_berlin', 'city_copenhagen', 'city_oslo', 'city_paris', 'city_rome', 'city_san-francisco', 'city_stockholm', 'city_zurich']
+'room_type_Entire_home/apt', 'room_type_Hotel_room', 'room_type_Private_room', 'room_type_Shared_room',
+'city_berlin', 'city_copenhagen', 'city_oslo', 'city_paris', 'city_rome', 'city_san-francisco', 'city_stockholm', 'city_zurich']
 
 app.logger.info("==> BACKEND: setup done! Ready for inference!")
 
@@ -114,17 +169,19 @@ def inference(raw_data):
     res = dict()
 
     if raw_data['name'] == '':
-        raw_data['name'] = ' '
+    raw_data['name'] = ' '
+
+    raw_data['city'] = process_city_name(name)
     if raw_data['city'] not in city_neighborhoods:
-        raw_data['city'] = 'berlin'
+    raw_data['city'] = 'berlin'
     if raw_data["neighbourhood"] not in neighbourhood_prices_dict:
-        raw_data["neighbourhood"] = city_neighborhoods[raw_data['city']][0]
+    raw_data["neighbourhood"] = city_neighborhoods[raw_data['city']][0]
 
     # get name embeddings
     encoded_input = tokenizer([raw_data["name"]], padding=True, truncation=True, max_length=128, return_tensors='pt')
     # Compute token embeddings
     with torch.no_grad():
-        model_output = name_model(**encoded_input)
+    model_output = name_model(**encoded_input)
     # Perform pooling. In this case, mean pooling
     name_embedding = mean_pooling(model_output, encoded_input['attention_mask'])
 
@@ -137,11 +194,11 @@ def inference(raw_data):
     # one hot encode others
     encoded = np.array(one_hot_city.transform([[raw_data["city"]]]).todense())[0]
     for i in range(len(cities)):
-        res['city_' + cities[i][3:]] = encoded[i]
+    res['city_' + cities[i][3:]] = encoded[i]
 
     encoded = np.array(one_hot_room_type.transform([[raw_data["room_type"]]]).todense())[0]
     for i in range(len(room_types)):
-        res['room_type_' + room_types[i][3:]] = encoded[i]
+    res['room_type_' + room_types[i][3:]] = encoded[i]
 
     res['neighbourhood'] = neighbourhood_prices_dict[raw_data["neighbourhood"]]
 
@@ -191,19 +248,27 @@ class PredictPrice(Resource):
             "neighborhood_avg": f'{avg:.2f}',
             "name_score": f'{name_score:.2f}'
         }
-        print(message)
         return message
+"""
 
-def test_database():
-    '''
-    get data from mongo DB
-    '''
-    x = house.find_one()
-    print(x)
-
-    # cursor = companies.find()
-    # print([Company(**doc).to_json() for doc in cursor])
-
+"""
+class DataBase_Queries(Resource):
+def get(self, args=None):
+app.logger.info("==> BACKEND: Predict pice method")
+args = request.args.to_dict()
+# args = {'city': 'zürich'} for now
+app.logger.info("==> BACKEND: args: ", args)
+message = {
+        "price": f'{pred:.2f}',
+        "weights": weights,
+        "neighborhood_avg": f'{avg:.2f}',
+        "name_score": f'{name_score:.2f}'
+    }
+return message
+"""
 # test()
 
-api.add_resource(PredictPrice, '/PredictPrice')
+api.add_resource(Get_Houses, '/house')
+api.add_resource(Get_Houses_Map, '/map')
+
+# api.add_resource(PredictPrice, '/PredictPrice')

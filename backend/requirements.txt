@@ -10,4 +10,4 @@ transformers
 torch
 joblib
 
-# ! pip install -U sentence-transformers
+! pip install -U sentence-transformers

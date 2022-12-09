@@ -4,6 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from typing import List
 
+"""
 class Company(BaseModel):
     id: int
     name: str
@@ -15,9 +16,10 @@ class Company(BaseModel):
     def to_json(self):
         return jsonable_encoder(self, exclude_none=True)
 
+    """
 
 class House(BaseModel):
-    id: int
+    id: str
     name: str
     host_id:str
     host_name:str
