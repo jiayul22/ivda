@@ -6,7 +6,7 @@
         label="City"
         filled
         height=5
-        @change="sendSelectionToBackend($event,selectedCity, selectedFeature)"
+        @change="sendSelectionToBackend($event)"
       ></v-combobox>
 
       <v-combobox
@@ -15,15 +15,16 @@
         label="Feature"
         filled
         height=5
-        @change="sendSelectionToBackend($event,selectedCity, selectedFeature)"
+        @change="sendSelectionToBackend($event)"
       ></v-combobox>
 
+    <div>{{ typeof this.outData}}</div>
     <div v-show="isHistogram">
       <v-row align="center" justify="center" class="mt-0 mb-0">
         <h3>Distribution of {{selectedFeature}} in {{selectedCity}}</h3>
       </v-row>
       <div style="height: 50vh">
-        <div id="histogram">
+        <div id="app">
           <HistogramSlider
           :width="500"
           :bar-height="200"
@@ -32,17 +33,19 @@
           :force-edges="true"
           :colors="['#4facfe', '#00f2fe']"
           :min=0
-          :max=1200
+
           />
         </div>
       </div>
     </div>
 
-    <div v-show="!isHistogram" id='room_type' style="height:350px; width:90%; margin: auto; text-align: center;"></div>
+    <div v-show="!isHistogram" id='room_type' style="height:350px; width:90%; margin: auto; text-align: center;">
       <v-row align="center" justify="center" class="mt-0 mb-0">
         <h3>Distribution of {{selectedFeature}} in {{selectedCity}}</h3>
       </v-row>
       <bar/>
+    </div>
+
   </v-card>
 </template>
 
@@ -63,7 +66,6 @@ export default {
     plotID : 0,
     inputFeature:{
       'city':'',
-      'neighbourhood':'',
       'feature':''
     },
     outData : []
@@ -73,12 +75,10 @@ export default {
   },
 
   methods: {
-    async sendSelectionToBackend (city, feature) {
-      console.log(city)
-      console.log(feature)
+    async sendSelectionToBackend () {
       this.barPlotId += 1
-      this.inputFeature['city'] = city
-      this.inputFeature['feature'] = feature
+      this.inputFeature['city'] = this.selectedCity
+      this.inputFeature['feature'] = this.selectedFeature
       // construct request
       var paras = ''
       for (const [key, value] of Object.entries(this.inputFeature)) {
@@ -88,8 +88,18 @@ export default {
       console.log("ReqURL " + reqUrl)
 
       // await response
-      const response = await fetch(reqUrl)
-      this.outData = await response;
+      const response = await fetch(reqUrl);
+      let res = await response.json();
+
+      if (this.selectedFeature === 'Price' || this.selectedFeature === "Minimum Nights") {
+        let out = res.out;
+        out.forEach(element => parseFloat(element));
+        this.outData = out;
+        this.max = res.max;
+      }
+      else {
+        this.outData = res;
+      }
     },
     drawLinePlot() {
       const data = [this.outData];
@@ -103,7 +113,11 @@ export default {
 
   computed: {
     isHistogram() {
-      return this.selectedFeature === 'Price' | this.selectedFeature === 'minimum nights';
+      if ( this.selectedFeature === 'Price' || this.selectedFeature === 'minimum nights'){
+        return true;
+      } else {
+        return false;
+      }
     }
   }
 };

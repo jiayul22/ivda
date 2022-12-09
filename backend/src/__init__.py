@@ -53,19 +53,40 @@ class Get_Houses(Resource):
           cursor = house.find()
       else:
           cursor = house.find(raw_data)
-
+      print(raw_data)
+      houses = [House(**doc) for doc in cursor]
+      print(houses[0])
       if feature == 'price':
-          houses = [int(float(House(**doc).price)) for doc in cursor]
+          houses = [float(h.price) for h in houses]
       elif feature == 'minimum_nights':
-          houses = [int(float(House(**doc).minimum_nights)) for doc in cursor]
+          houses = [float(h.minimum_nights) for h in houses]
       elif feature == 'room_type':
-          houses = [House(**doc).room_type for doc in cursor]
+          houses = [h.room_type for h in houses]
           values, counts = np.unique(houses, return_counts=True)
-          return {'x': values, 'y': counts, type: 'bar'}
+          return {'x': values.tolist(), 'y': counts.tolist(), 'type': 'bar'}
       else:
-          houses = [House(**doc).to_json() for doc in cursor]
+          print(feature)
+          houses = [h.to_json() for h in houses]
+      return {'out':houses, "max":np.max(houses).item()}
 
-      return houses
+class Get_Houses_Map(Resource):
+    def get(self):
+          # args: {'city':['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']
+          # 'feature':['Price', 'room type', 'minimum nights']}
+          args = request.args.to_dict()
+          raw_data = args.copy()
+          def process_city_name(name):
+              return name.lower().replace(' ', '-')
+          raw_data['city'] = process_city_name(raw_data['city'])
+
+          cursor = house.find(raw_data)
+          m = []
+          for doc in cursor:
+              h = House(**doc)
+              m.append({'price':h.price, 'lat':float(h.latitude), 'lng':float(h.longitude)})
+
+          message = {'out':m}
+          return message
 
 
 # --------------------------------------------------------------------------------------------------------
@@ -248,5 +269,6 @@ return message
 # test()
 
 api.add_resource(Get_Houses, '/house')
+api.add_resource(Get_Houses_Map, '/map')
 
 # api.add_resource(PredictPrice, '/PredictPrice')
