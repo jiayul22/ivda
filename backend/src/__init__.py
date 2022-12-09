@@ -29,70 +29,9 @@ house: Collection = pymongo.db.house
 api = Api(app)
 app.logger.info("==> BACKEND: imports done!")
 
-backend_storage = os.path.join(os.getcwd(), "backend_storage/")
-city_neighborhoods = load(os.path.join(backend_storage, 'city_neighborhoods.joblib'))
-
-
-class Get_Houses(Resource):
-    def get(self):
-      # args: {'city':['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']
-      # 'feature':['Price', 'room type', 'minimum nights']}
-      args = request.args.to_dict()
-      raw_data = args.copy()
-
-      def process_city_name(name):
-          return name.lower().replace(' ', '-')
-      raw_data['city'] = process_city_name(raw_data['city'])
-
-      feature = raw_data['feature'].lower().replace(' ', '_')
-      del raw_data['feature']
-
-      if raw_data['city'] not in city_neighborhoods:
-          raw_data['city'] = 'select'
-      if raw_data['city'] == 'select':
-          cursor = house.find()
-      else:
-          cursor = house.find(raw_data)
-      print(raw_data)
-      houses = [House(**doc) for doc in cursor]
-      print(houses[0])
-      if feature == 'price':
-          houses = [float(h.price) for h in houses]
-      elif feature == 'minimum_nights':
-          houses = [float(h.minimum_nights) for h in houses]
-      elif feature == 'room_type':
-          houses = [h.room_type for h in houses]
-          values, counts = np.unique(houses, return_counts=True)
-          return {'x': values.tolist(), 'y': counts.tolist(), 'type': 'bar'}
-      else:
-          print(feature)
-          houses = [h.to_json() for h in houses]
-      return {'out':houses, "max":np.max(houses).item()}
-
-class Get_Houses_Map(Resource):
-    def get(self):
-          # args: {'city':['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']
-          # 'feature':['Price', 'room type', 'minimum nights']}
-          args = request.args.to_dict()
-          raw_data = args.copy()
-          def process_city_name(name):
-              return name.lower().replace(' ', '-')
-          raw_data['city'] = process_city_name(raw_data['city'])
-
-          cursor = house.find(raw_data)
-          m = []
-          for doc in cursor:
-              h = House(**doc)
-              m.append({'price':h.price, 'lat':float(h.latitude), 'lng':float(h.longitude)})
-
-          message = {'out':m}
-          return message
-
-
 # --------------------------------------------------------------------------------------------------------
 # --------------------------------------- SETUP EVERYTHING -----------------------------------------------
 # --------------------------------------------------------------------------------------------------------
-"""
 # Get Docker global variables - OR MAYBE NO DOCKER NOW
 backend_storage = os.path.join(os.getcwd(), "backend_storage/")
 
@@ -145,7 +84,7 @@ def process_city_name(name):
 
 # price encoding for neighborhoods
 with open(os.path.join(backend_storage, 'neighbourhood_prices_dict.json'),'r') as json_file:
-neighbourhood_prices_dict = json.load(json_file)
+    neighbourhood_prices_dict = json.load(json_file)
 
 price_model_coef = np.load(os.path.join(backend_storage, 'price_model_coef.npy'))
 price_model_intercept = np.load(os.path.join(backend_storage, 'price_model_intercept.npy'))
@@ -169,19 +108,19 @@ def inference(raw_data):
     res = dict()
 
     if raw_data['name'] == '':
-    raw_data['name'] = ' '
+        raw_data['name'] = ' '
 
     raw_data['city'] = process_city_name(name)
     if raw_data['city'] not in city_neighborhoods:
-    raw_data['city'] = 'berlin'
+        raw_data['city'] = 'berlin'
     if raw_data["neighbourhood"] not in neighbourhood_prices_dict:
-    raw_data["neighbourhood"] = city_neighborhoods[raw_data['city']][0]
+        raw_data["neighbourhood"] = city_neighborhoods[raw_data['city']][0]
 
     # get name embeddings
     encoded_input = tokenizer([raw_data["name"]], padding=True, truncation=True, max_length=128, return_tensors='pt')
     # Compute token embeddings
     with torch.no_grad():
-    model_output = name_model(**encoded_input)
+        model_output = name_model(**encoded_input)
     # Perform pooling. In this case, mean pooling
     name_embedding = mean_pooling(model_output, encoded_input['attention_mask'])
 
@@ -194,11 +133,11 @@ def inference(raw_data):
     # one hot encode others
     encoded = np.array(one_hot_city.transform([[raw_data["city"]]]).todense())[0]
     for i in range(len(cities)):
-    res['city_' + cities[i][3:]] = encoded[i]
+        res['city_' + cities[i][3:]] = encoded[i]
 
     encoded = np.array(one_hot_room_type.transform([[raw_data["room_type"]]]).todense())[0]
     for i in range(len(room_types)):
-    res['room_type_' + room_types[i][3:]] = encoded[i]
+        res['room_type_' + room_types[i][3:]] = encoded[i]
 
     res['neighbourhood'] = neighbourhood_prices_dict[raw_data["neighbourhood"]]
 
@@ -249,26 +188,8 @@ class PredictPrice(Resource):
             "name_score": f'{name_score:.2f}'
         }
         return message
-"""
-
-"""
-class DataBase_Queries(Resource):
-def get(self, args=None):
-app.logger.info("==> BACKEND: Predict pice method")
-args = request.args.to_dict()
-# args = {'city': 'zürich'} for now
-app.logger.info("==> BACKEND: args: ", args)
-message = {
-        "price": f'{pred:.2f}',
-        "weights": weights,
-        "neighborhood_avg": f'{avg:.2f}',
-        "name_score": f'{name_score:.2f}'
-    }
-return message
-"""
-# test()
 
 api.add_resource(Get_Houses, '/house')
 api.add_resource(Get_Houses_Map, '/map')
 
-# api.add_resource(PredictPrice, '/PredictPrice')
+api.add_resource(PredictPrice, '/PredictPrice')
