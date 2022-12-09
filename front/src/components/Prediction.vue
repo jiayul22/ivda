@@ -86,7 +86,7 @@ export default {
     },
     selectCategory: [
       // TODO should read database to get full data
-      {name: 'city', value: ['zurich','berlin']},
+      {name: 'city', value: ['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']},
       {name: 'neighbourhood' , value: ['Sihlfeld', 'Alt-Wiedikon', 'Enge', 'Höngg', 'Wollishofen',
                                 'Escher Wyss', 'Wipkingen', 'Gewerbeschule', 'Rathaus']},
       {name: 'room_type', value: ['Entire home/apt', 'Private room', 'Hotel room', 'Shared room']},

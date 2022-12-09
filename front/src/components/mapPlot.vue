@@ -1,91 +1,66 @@
 <template>
+  <div>
+    <v-combobox
+        v-model="selectedCity"
+        :items=city
+        label="City"
+        filled
+        height=5
+    ></v-combobox>
+    <div>{{selectedCity}}</div>
 
-  <div style="height: 500px; width: 100%">
 
-    <l-map
-        v-if="showMap"
-        :zoom="zoom"
-        :center="center"
-        :options="mapOptions"
-        style="height: 100%"
-        @update:center="centerUpdate"
-        @update:zoom="zoomUpdate"
-    >
-      <l-tile-layer
-          :url="url"
-          :attribution="attribution"
-      />
-      <l-marker :lat-lng="withPopup">
-        <l-popup>
-          <div @click="innerClick">
-            I am a popup
-            <p v-show="showParagraph">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque
-              sed pretium nisl, ut sagittis sapien. Sed vel sollicitudin nisi.
-              Donec finibus semper metus id malesuada.
-            </p>
-          </div>
-        </l-popup>
-      </l-marker>
-      <l-marker :lat-lng="withTooltip">
-        <l-tooltip :options="{ permanent: true, interactive: true }">
-          <div @click="innerClick">
-            I am a tooltip
-            <p v-show="showParagraph">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque
-              sed pretium nisl, ut sagittis sapien. Sed vel sollicitudin nisi.
-              Donec finibus semper metus id malesuada.
-            </p>
-          </div>
-        </l-tooltip>
-      </l-marker>
-    </l-map>
+  <l-map style="height: 500px" :zoom="zoom" :center="center">
+  <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
+  <l-marker :lat-lng="markerLatLng" ></l-marker>
+  </l-map>
   </div>
 </template>
 
 <script>
-import { latLng } from "leaflet";
-import { LMap, LTileLayer, LMarker, LPopup, LTooltip } from "vue2-leaflet";
+import { marker } from 'leaflet';
+import {LMap, LTileLayer, LMarker} from 'vue2-leaflet';
 
 export default {
-  name: "ScatterPlot",
   components: {
     LMap,
     LTileLayer,
-    LMarker,
-    LPopup,
-    LTooltip
+    LMarker
   },
-  data() {
+  data () {
     return {
-      zoom: 13,
-      center: latLng(47.36667, 8.5500),
       url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       attribution:
-          '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-      withPopup: latLng(47.41322, -1.219482),
-      withTooltip: latLng(47.41422, -1.250482),
-      currentZoom: 11.5,
-      currentCenter: latLng(47.41322, -1.219482),
-      showParagraph: false,
-      mapOptions: {
-        zoomSnap: 0.5
-      },
-      showMap: true
-    };
+        '&copy; <a target="_blank" href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      zoom: 3,
+      center: [47.313220, -1.319482],
+      markerLatLng: []
+    }
+  },
+  mounted() {
+    this.fetchData()
   },
   methods: {
-    zoomUpdate(zoom) {
-      this.currentZoom = zoom;
-    },
-    centerUpdate(center) {
-      this.currentCenter = center;
-    },
-    showLongText() {
-      this.showParagraph = !this.showParagraph;
-    },
-    innerClick() {
-      alert("Click!");
+    async fetch_data() {
+      for (var i=0; i<5; i++){
+        var lat = Math.floor(Math.random() *88) + 1;
+        lat *= Math.floor(Math.random() * 2) == 1 ? 1 : -1;
+
+        var lng = Math.floor(Math.random() *88) + 1;
+        lng *= Math.floor(Math.random() * 2) == 1 ? 1 : -1;
+        
+        this.markerLatLng.push([lat, lng])
+        console.log(this.markerLatLng)
+      }    
+    },  
+
+  created() {
+      var coordinates = [[47.313220, -100.319482], [156.0, 48.0]]
+      for (var i = 0; i < 2; i++) {
+        var a = coordinates[i]
+        this.markerLatLng.push(a)
+      }
+      console.log(this.markerLatLng)
     }
   }
 };
