@@ -110,7 +110,7 @@ def inference(raw_data):
     if raw_data['name'] == '':
         raw_data['name'] = ' '
 
-    raw_data['city'] = process_city_name(name)
+    raw_data['city'] = process_city_name(raw_data['city'])
     if raw_data['city'] not in city_neighborhoods:
         raw_data['city'] = 'berlin'
     if raw_data["neighbourhood"] not in neighbourhood_prices_dict:
