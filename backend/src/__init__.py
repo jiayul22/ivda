@@ -189,6 +189,61 @@ class PredictPrice(Resource):
         }
         return message
 
+        class Get_Houses(Resource):
+            def get(self):
+                # args: {'city':['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']
+                # 'feature':['Price', 'room type', 'minimum nights']}
+                args = request.args.to_dict()
+                raw_data = args.copy()
+
+                def process_city_name(name):
+                     return name.lower().replace(' ', '-')
+                raw_data['city'] = process_city_name(raw_data['city'])
+
+                feature = raw_data['feature'].lower().replace(' ', '_')
+                del raw_data['feature']
+
+                if raw_data['city'] not in city_neighborhoods:
+                    raw_data['city'] = 'select'
+                if raw_data['city'] == 'select':
+                    cursor = house.find()
+                else:
+                    cursor = house.find(raw_data)
+                print(raw_data)
+                houses = [House(**doc) for doc in cursor]
+                print(houses[0])
+                if feature == 'price':
+                    houses = [float(h.price) for h in houses]
+                elif feature == 'minimum_nights':
+                    houses = [float(h.minimum_nights) for h in houses]
+                elif feature == 'room_type':
+                    houses = [h.room_type for h in houses]
+                    values, counts = np.unique(houses, return_counts=True)
+                    return {'x': values.tolist(), 'y': counts.tolist(), 'type': 'bar'}
+                else:
+                    print(feature)
+                    houses = [h.to_json() for h in houses]
+                return {'out':houses, "max":np.max(houses).item()}
+
+        class Get_Houses_Map(Resource):
+            def get(self):
+                # args: {'city':['Zurich', 'Berlin', 'Copenhagen', 'Oslo', 'Paris', 'Rome', 'San Francisco', 'Stockholm']
+                # 'feature':['Price', 'room type', 'minimum nights']}
+                args = request.args.to_dict()
+                raw_data = args.copy()
+                def process_city_name(name):
+                    return name.lower().replace(' ', '-')
+                raw_data['city'] = process_city_name(raw_data['city'])
+
+                cursor = house.find(raw_data)
+                m = []
+                for doc in cursor:
+                    h = House(**doc)
+                    m.append({'price':h.price, 'lat':float(h.latitude), 'lng':float(h.longitude)})
+
+                message = {'out':m}
+                return message
+
 api.add_resource(Get_Houses, '/house')
 api.add_resource(Get_Houses_Map, '/map')
 
